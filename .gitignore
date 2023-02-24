@@ -1,0 +1,4 @@
+profiles-data/
+__pycache__/
+*.xlsx
+*.json
