@@ -1,8 +1,10 @@
 
 import pandas as pd
-import json
+import simplejson as json
 import openpyxl
 import requests
+import os
+
 
 class Profile(object):
     def __init__(self, excel_file):
@@ -56,25 +58,53 @@ class Profile(object):
         excel_videos_data = pd.DataFrame(excel_videos_data)
         excel_profile_data = pd.DataFrame(excel_profile_data)
 
+        #loop through excel_profile_data and remove any items that has a value NaN
+        for index, row in excel_profile_data.iterrows():
+            for key, value in row.items():
+                if pd.isna(value):
+                    del row[key]
+        
+        print(excel_profile_data)
+
+        #loop through excel_videos_data (a list) and remove any items that has a value NaN
+        for index, row in excel_videos_data.iterrows():
+            for key, value in row.items():
+                if pd.isna(value):
+                    del row[key]
+
+
+
+
         self.excel_videos_data = excel_videos_data
         self.excel_profile_data = excel_profile_data
 
     def scrape_profile_details(self):
-        self.profile_details = self.excel_profile_data.to_dict(orient='records')[0]
+        self.profile_details = self.excel_profile_data.to_dict(orient='records')[
+            0]
         self.profile_details['Frequently Used Hashtags'] = None
 
         username = self.profile_details['Username:']
         username = username[1:]
         if username[-1] == '✅':
             username = username[:-1]
+        self.profile_details['username'] = username
         print('sending request to get pic and following count of username : ' + username)
         try:
-            response = requests.post('https://tokscraper.com/api/user/id', json={'username': username})
+            response = requests.post(
+                'https://tokscraper.com/api/user/id', json={'username': username})
             print(response.json())
-            #send a request and download response.picUrl (jpeg photo link) to static folder profiles-pics
-            
 
+            self.profile_details['following'] = response.json()['following']
+             #send a request and download response.picUrl (jpeg photo link) to static folder profiles-pics
 
+            url = response.json()['picUrl']
+
+            file_path = os.path.join('profiles-photos', username+'.jpg')
+
+            response = requests.get(url)
+
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
         except Exception as e:
             print(e)
             print('failed to get profile pic and following count')
@@ -353,9 +383,8 @@ class Profile(object):
             "videos_time_series": self.videos_time_series
         }
 
-        self.data = data   
+        self.data = data
 
-        data = json.dumps(data)
-        with open('data.json', 'w') as outfile:
-            outfile.write(data)
+        data = json.dumps(data, ignore_nan=True)
+
 

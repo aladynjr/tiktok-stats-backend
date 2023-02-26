@@ -1,12 +1,15 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask_cors import CORS
+
 from profile import Profile
-import json
+import simplejson as json
 import random
 import os
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route('/excel', methods=['POST'])
+@app.route('/api/profile/upload', methods=['POST'])
 def main():
 
     excel_file = request.files['file']
@@ -18,14 +21,13 @@ def main():
     file_name = ''.join(e for e in file_name if e.isalnum())
 
     with open('profiles-data/' + file_name +'.json', 'w') as outfile:
-        json.dump(profile.data, outfile)
+        json.dump(profile.data, outfile, ignore_nan=True)
+
+    return json.dumps(profile.data, ignore_nan=True)
 
 
-    return jsonify(profile.data)
 
-
-
-@app.route('/profiles/<string:name>', methods=['GET'])
+@app.route('/api/profile/<string:name>', methods=['GET'])
 def get_profile(name):
     data_folder = os.path.join(os.path.dirname(__file__), 'profiles-data')
     filename = '{}.json'.format(name)
@@ -38,6 +40,12 @@ def get_profile(name):
             return jsonify(data)
     else:
         return jsonify({'error': True, 'message': 'Profile not found'})
+
+@app.route('/api/profile/photo/<id>')
+def display_photo(id):
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'profiles-photos', f'{id}.jpg')
+    return send_file(file_path)
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
