@@ -14,8 +14,9 @@ class Profile(object):
         self.parse_excel(excel_file)
         self.clean_excel_videos_data()
 
-        self.profile_details = None
-        self.scrape_profile_details()
+        self.profile_details = {}
+        self.get_profile_details()
+        self.scrape_additional_profile_details()
 
         self.totals = None
         self.get_totals()
@@ -64,7 +65,6 @@ class Profile(object):
                 if pd.isna(value):
                     del row[key]
         
-        print(excel_profile_data)
 
         #loop through excel_videos_data (a list) and remove any items that has a value NaN
         for index, row in excel_videos_data.iterrows():
@@ -73,21 +73,28 @@ class Profile(object):
                     del row[key]
 
 
-
-
         self.excel_videos_data = excel_videos_data
         self.excel_profile_data = excel_profile_data
 
-    def scrape_profile_details(self):
-        self.profile_details = self.excel_profile_data.to_dict(orient='records')[
-            0]
-        self.profile_details['Frequently Used Hashtags'] = None
+    def get_profile_details(self):
+        excel_profile_data_dict = self.excel_profile_data.to_dict(orient='records')[0]
 
-        username = self.profile_details['Username:']
+        self.profile_details['bio'] = excel_profile_data_dict['Bio']
+        self.profile_details['likes'] = excel_profile_data_dict[' Profile Likes']
+        self.profile_details['followers'] = excel_profile_data_dict['Followers']
+        self.profile_details['followers'] = excel_profile_data_dict['Followers']
+        self.profile_details['link_in_bio'] = excel_profile_data_dict['Link in Bio']
+        self.profile_details['profile_link'] = excel_profile_data_dict['Profile Link']
+        username = excel_profile_data_dict['Username:']
         username = username[1:]
         if username[-1] == '✅':
             username = username[:-1]
         self.profile_details['username'] = username
+
+    def scrape_additional_profile_details(self):
+
+       
+        username = self.profile_details['username']
         print('sending request to get pic and following count of username : ' + username)
         try:
             response = requests.post(
@@ -106,10 +113,10 @@ class Profile(object):
             with open(file_path, 'wb') as f:
                 f.write(response.content)
         except Exception as e:
-            print(e)
+            print(e.message)
             print('failed to get profile pic and following count')
             return
-
+        
     def clean_excel_videos_data(self):
         #self.excel_videos_data.columns = excel_videos_data.columns.str.replace(r"[^a-zA-Z]+","", regex=True)
         # from excel videos data columns, remove any character that's not a letter or a space
@@ -173,19 +180,26 @@ class Profile(object):
         return self.averages
 
     def get_top_videos(self):
-        # get top videos in views, likes, comments, and shares
-        top_views = self.excel_videos_data.nlargest(5, 'Views')
-        top_likes = self.excel_videos_data.nlargest(5, 'Likes')
-        top_comments = self.excel_videos_data.nlargest(5, 'Comments')
-        top_shares = self.excel_videos_data.nlargest(5, 'Shares')
+        # get top videos in views, sowe have a list with dicionaries of the top 5 videos
+        top_views_videos = self.excel_videos_data.nlargest(5, 'Views')
+        top_views = top_views_videos.to_dict(orient='records')
+
+        top_likes_videos = self.excel_videos_data.nlargest(5, 'Likes')
+        top_likes = top_likes_videos.to_dict(orient='records')
+
+        top_comments_videos = self.excel_videos_data.nlargest(5, 'Comments')
+        top_comments = top_comments_videos.to_dict(orient='records')
+
+        top_shares_videos = self.excel_videos_data.nlargest(5, 'Shares')
+        top_shares = top_shares_videos.to_dict(orient='records')
 
         # create a dictionary with the top videos
 
         self.top_videos = {
-            'top_views': top_views.to_dict(),
-            'top_likes': top_likes.to_dict(),
-            'top_comments': top_comments.to_dict(),
-            'top_shares': top_shares.to_dict()
+            'top_views': top_views,
+            'top_likes': top_likes,
+            'top_comments': top_comments,
+            'top_shares': top_shares
         }
 
         return self.top_videos

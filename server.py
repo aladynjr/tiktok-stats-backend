@@ -17,7 +17,7 @@ def main():
     profile = Profile(excel_file)
 
     #save profile.data as json in folder profiles-data with name profile.profile_details['Username]
-    file_name = profile.profile_details['Username:'] + str(random.randint(1, 1000000))
+    file_name = profile.profile_details['username'] + str(random.randint(1, 1000000))
     file_name = ''.join(e for e in file_name if e.isalnum())
 
     with open('profiles-data/' + file_name +'.json', 'w') as outfile:
