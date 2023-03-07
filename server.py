@@ -1,12 +1,14 @@
-from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask import Flask, jsonify, request, send_from_directory, send_file, render_template
 from flask_cors import CORS
 
 from profile import Profile
 import simplejson as json
 import random
 import os
+import datetime
 
-app = Flask(__name__)
+
+app = Flask(__name__,static_folder='build')
 CORS(app)
 
 @app.route('/api/profile/upload', methods=['POST'])
@@ -47,7 +49,22 @@ def display_photo(id):
     return send_file(file_path)
 
 
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        # Serve any static files
+        return send_from_directory(app.static_folder, path)
+    else:
+        # Serve the index.html for any non-static files
+        return send_from_directory(app.static_folder, 'index.html')
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
+
 
 

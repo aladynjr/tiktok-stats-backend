@@ -4,6 +4,9 @@ import simplejson as json
 import openpyxl
 import requests
 import os
+from datetime import datetime, timedelta
+
+#import date from dateime 
 
 
 class Profile(object):
@@ -33,20 +36,23 @@ class Profile(object):
         self.hashtags_data = None
         self.get_hashtags_data()
 
-        self.views_time_series = None
-        self.get_views_time_series()
+        self.views_timeseries = None
+        self.get_views_timeseries()
 
-        self.likes_time_series = None
-        self.get_likes_time_series()
+        self.likes_timeseries = None
+        self.get_likes_timeseries()
 
-        self.comments_time_series = None
-        self.get_comments_time_series()
+        self.comments_timeseries = None
+        self.get_comments_timeseries()
 
-        self.shares_time_series = None
-        self.get_shares_time_series()
+        self.shares_timeseries = None
+        self.get_shares_timeseries()
 
-        self.videos_time_series = None
-        self.get_videos_time_series()
+        self.videos_timeseries = None
+        self.get_videos_timeseries()
+
+        self.videos_timeseries_by_week = None
+        self.split_videos_timeseries_into_weeks()
 
         self.data = None
         self.save_as_json()
@@ -267,119 +273,150 @@ class Profile(object):
         self.hashtags_data = hashtags_list
         return self.hashtags_data
 
-    def get_views_time_series(self):
+    def get_views_timeseries(self):
         # get the views time series
-        views_time_series = self.excel_videos_data[['Date Posted', 'Views']]
-        views_time_series = views_time_series.set_index('Date Posted')
-        views_time_series = views_time_series.groupby('Date Posted')[
+        views_timeseries = self.excel_videos_data[['Date Posted', 'Views']]
+        views_timeseries = views_timeseries.set_index('Date Posted')
+        views_timeseries = views_timeseries.groupby('Date Posted')[
             'Views'].sum()
-        views_time_series = views_time_series.to_frame()
-        views_time_series = views_time_series.reset_index()
-        views_time_series['Date Posted'] = pd.to_datetime(
-            views_time_series['Date Posted'])
-        views_time_series = views_time_series.sort_values(by='Date Posted')
-        views_time_series = views_time_series.set_index('Date Posted')
-        views_time_series = views_time_series.resample('D').sum()
-        views_time_series = views_time_series.fillna(0)
-        views_time_series = views_time_series.reset_index()
-        views_time_series['Date Posted'] = views_time_series['Date Posted'].dt.strftime(
+        views_timeseries = views_timeseries.to_frame()
+        views_timeseries = views_timeseries.reset_index()
+        views_timeseries['Date Posted'] = pd.to_datetime(
+            views_timeseries['Date Posted'])
+        views_timeseries = views_timeseries.sort_values(by='Date Posted')
+        views_timeseries = views_timeseries.set_index('Date Posted')
+        views_timeseries = views_timeseries.resample('D').sum()
+        views_timeseries = views_timeseries.fillna(0)
+        views_timeseries = views_timeseries.reset_index()
+        views_timeseries['Date Posted'] = views_timeseries['Date Posted'].dt.strftime(
             '%Y-%m-%d')
-        views_time_series = views_time_series.to_dict('records')
-        self.views_time_series = views_time_series
-        return self.views_time_series
+        views_timeseries = views_timeseries.to_dict('records')
+        self.views_timeseries = views_timeseries
+        return self.views_timeseries
 
-    def get_likes_time_series(self):
+    def get_likes_timeseries(self):
         # get the likes time series
-        likes_time_series = self.excel_videos_data[['Date Posted', 'Likes']]
-        likes_time_series = likes_time_series.set_index('Date Posted')
-        likes_time_series = likes_time_series.groupby('Date Posted')[
+        likes_timeseries = self.excel_videos_data[['Date Posted', 'Likes']]
+        likes_timeseries = likes_timeseries.set_index('Date Posted')
+        likes_timeseries = likes_timeseries.groupby('Date Posted')[
             'Likes'].sum()
-        likes_time_series = likes_time_series.to_frame()
-        likes_time_series = likes_time_series.reset_index()
-        likes_time_series['Date Posted'] = pd.to_datetime(
-            likes_time_series['Date Posted'])
-        likes_time_series = likes_time_series.sort_values(by='Date Posted')
-        likes_time_series = likes_time_series.set_index('Date Posted')
-        likes_time_series = likes_time_series.resample('D').sum()
-        likes_time_series = likes_time_series.fillna(0)
-        likes_time_series = likes_time_series.reset_index()
-        likes_time_series['Date Posted'] = likes_time_series['Date Posted'].dt.strftime(
+        likes_timeseries = likes_timeseries.to_frame()
+        likes_timeseries = likes_timeseries.reset_index()
+        likes_timeseries['Date Posted'] = pd.to_datetime(
+            likes_timeseries['Date Posted'])
+        likes_timeseries = likes_timeseries.sort_values(by='Date Posted')
+        likes_timeseries = likes_timeseries.set_index('Date Posted')
+        likes_timeseries = likes_timeseries.resample('D').sum()
+        likes_timeseries = likes_timeseries.fillna(0)
+        likes_timeseries = likes_timeseries.reset_index()
+        likes_timeseries['Date Posted'] = likes_timeseries['Date Posted'].dt.strftime(
             '%Y-%m-%d')
-        likes_time_series = likes_time_series.to_dict('records')
-        self.likes_time_series = likes_time_series
-        return self.likes_time_series
+        likes_timeseries = likes_timeseries.to_dict('records')
+        self.likes_timeseries = likes_timeseries
+        return self.likes_timeseries
 
-    def get_comments_time_series(self):
+    def get_comments_timeseries(self):
         # get the comments time series
-        comments_time_series = self.excel_videos_data[[
+        comments_timeseries = self.excel_videos_data[[
             'Date Posted', 'Comments']]
-        comments_time_series = comments_time_series.set_index('Date Posted')
-        comments_time_series = comments_time_series.groupby('Date Posted')[
+        comments_timeseries = comments_timeseries.set_index('Date Posted')
+        comments_timeseries = comments_timeseries.groupby('Date Posted')[
             'Comments'].sum()
-        comments_time_series = comments_time_series.to_frame()
-        comments_time_series = comments_time_series.reset_index()
-        comments_time_series['Date Posted'] = pd.to_datetime(
-            comments_time_series['Date Posted'])
-        comments_time_series = comments_time_series.sort_values(
+        comments_timeseries = comments_timeseries.to_frame()
+        comments_timeseries = comments_timeseries.reset_index()
+        comments_timeseries['Date Posted'] = pd.to_datetime(
+            comments_timeseries['Date Posted'])
+        comments_timeseries = comments_timeseries.sort_values(
             by='Date Posted')
-        comments_time_series = comments_time_series.set_index('Date Posted')
-        comments_time_series = comments_time_series.resample('D').sum()
-        comments_time_series = comments_time_series.fillna(0)
-        comments_time_series = comments_time_series.reset_index()
-        comments_time_series['Date Posted'] = comments_time_series['Date Posted'].dt.strftime(
+        comments_timeseries = comments_timeseries.set_index('Date Posted')
+        comments_timeseries = comments_timeseries.resample('D').sum()
+        comments_timeseries = comments_timeseries.fillna(0)
+        comments_timeseries = comments_timeseries.reset_index()
+        comments_timeseries['Date Posted'] = comments_timeseries['Date Posted'].dt.strftime(
             '%Y-%m-%d')
-        comments_time_series = comments_time_series.to_dict('records')
-        self.comments_time_series = comments_time_series
-        return self.comments_time_series
+        comments_timeseries = comments_timeseries.to_dict('records')
+        self.comments_timeseries = comments_timeseries
+        return self.comments_timeseries
 
-    def get_shares_time_series(self):
+    def get_shares_timeseries(self):
         # get the shares time series
-        shares_time_series = self.excel_videos_data[['Date Posted', 'Shares']]
-        shares_time_series = shares_time_series.set_index('Date Posted')
-        shares_time_series = shares_time_series.groupby('Date Posted')[
+        shares_timeseries = self.excel_videos_data[['Date Posted', 'Shares']]
+        shares_timeseries = shares_timeseries.set_index('Date Posted')
+        shares_timeseries = shares_timeseries.groupby('Date Posted')[
             'Shares'].sum()
-        shares_time_series = shares_time_series.to_frame()
-        shares_time_series = shares_time_series.reset_index()
-        shares_time_series['Date Posted'] = pd.to_datetime(
-            shares_time_series['Date Posted'])
-        shares_time_series = shares_time_series.sort_values(by='Date Posted')
-        shares_time_series = shares_time_series.set_index('Date Posted')
-        shares_time_series = shares_time_series.resample('D').sum()
-        shares_time_series = shares_time_series.fillna(0)
-        shares_time_series = shares_time_series.reset_index()
-        shares_time_series['Date Posted'] = shares_time_series['Date Posted'].dt.strftime(
+        shares_timeseries = shares_timeseries.to_frame()
+        shares_timeseries = shares_timeseries.reset_index()
+        shares_timeseries['Date Posted'] = pd.to_datetime(
+            shares_timeseries['Date Posted'])
+        shares_timeseries = shares_timeseries.sort_values(by='Date Posted')
+        shares_timeseries = shares_timeseries.set_index('Date Posted')
+        shares_timeseries = shares_timeseries.resample('D').sum()
+        shares_timeseries = shares_timeseries.fillna(0)
+        shares_timeseries = shares_timeseries.reset_index()
+        shares_timeseries['Date Posted'] = shares_timeseries['Date Posted'].dt.strftime(
             '%Y-%m-%d')
-        shares_time_series = shares_time_series.to_dict('records')
-        self.shares_time_series = shares_time_series
-        return self.shares_time_series
+        shares_timeseries = shares_timeseries.to_dict('records')
+        self.shares_timeseries = shares_timeseries
+        return self.shares_timeseries
 
-    def get_videos_time_series(self):
+    def get_videos_timeseries(self):
         # get the videos time series
-        videos_time_series = self.excel_videos_data[[
+        videos_timeseries = self.excel_videos_data[[
             'Date Posted', 'Link to TikTok']]
-        videos_time_series = videos_time_series.set_index('Date Posted')
-        videos_time_series = videos_time_series.groupby(
+        videos_timeseries = videos_timeseries.set_index('Date Posted')
+        videos_timeseries = videos_timeseries.groupby(
             'Date Posted')['Link to TikTok'].count()
-        videos_time_series = videos_time_series.to_frame()
-        videos_time_series = videos_time_series.reset_index()
-        videos_time_series['Date Posted'] = pd.to_datetime(
-            videos_time_series['Date Posted'])
-        videos_time_series = videos_time_series.sort_values(by='Date Posted')
-        videos_time_series = videos_time_series.set_index('Date Posted')
-        videos_time_series = videos_time_series.resample('D').sum()
-        videos_time_series = videos_time_series.fillna(0)
-        videos_time_series = videos_time_series.reset_index()
-        videos_time_series['Date Posted'] = videos_time_series['Date Posted'].dt.strftime(
+        videos_timeseries = videos_timeseries.to_frame()
+        videos_timeseries = videos_timeseries.reset_index()
+        videos_timeseries['Date Posted'] = pd.to_datetime(
+            videos_timeseries['Date Posted'])
+        videos_timeseries = videos_timeseries.sort_values(by='Date Posted')
+        videos_timeseries = videos_timeseries.set_index('Date Posted')
+        videos_timeseries = videos_timeseries.resample('D').sum()
+        videos_timeseries = videos_timeseries.fillna(0)
+        videos_timeseries = videos_timeseries.reset_index()
+        videos_timeseries['Date Posted'] = videos_timeseries['Date Posted'].dt.strftime(
             '%Y-%m-%d')
-        videos_time_series = videos_time_series.to_dict('records')
-        self.videos_time_series = videos_time_series
+        videos_timeseries = videos_timeseries.to_dict('records')
+        self.videos_timeseries = videos_timeseries
         # change Link to TikTok column name to videos
-        self.videos_time_series = pd.DataFrame(self.videos_time_series)
-        self.videos_time_series = self.videos_time_series.rename(
+        self.videos_timeseries = pd.DataFrame(self.videos_timeseries)
+        self.videos_timeseries = self.videos_timeseries.rename(
             columns={'Link to TikTok': 'Videos'})
-        self.videos_time_series = self.videos_time_series.to_dict('records')
+        #add day name column
+        self.videos_timeseries['Day'] = self.videos_timeseries['Date Posted'].apply(self.get_day_name_from_date)
+        self.videos_timeseries = self.videos_timeseries.to_dict('records')
 
-        return self.videos_time_series
+        return self.videos_timeseries
+
+    def get_day_name_from_date(self, date):
+        day = datetime.strptime(date, '%Y-%m-%d').weekday()
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        return days[day]
+    
+    def split_videos_timeseries_into_weeks(self):
+        weeks = []
+        videos_timeseries = self.videos_timeseries
+        # make sure the first day is a sunday, if it's not, add empty days to the start of the array until we reach sunday
+        first_day = self.get_day_name_from_date(videos_timeseries[0]['Date Posted'])
+        if first_day != 'Sunday':
+            days_to_add = 6 if first_day == 'Monday' else 5 if first_day == 'Tuesday' else 4 if first_day == 'Wednesday' else 3 if first_day == 'Thursday' else 2 if first_day == 'Friday' else 1 if first_day == 'Saturday' else 0
+            for i in range(days_to_add):
+                # date posted is the difference between the first day and the current day in the loop
+                date_posted = datetime.strptime(videos_timeseries[0]['Date Posted'], '%Y-%m-%d')
+                date_posted -= timedelta(days=i)
+                date_posted = date_posted.strftime('%Y-%m-%d')
+
+                videos_timeseries.insert(0, {'Videos': 0, 'Date Posted': date_posted})
+
+        weeks_count = (len(videos_timeseries) + 6) // 7
+
+        for i in range(weeks_count):
+            week = videos_timeseries[i*7 : i*7+7]
+            weeks.append(week)
+
+        self.videos_timeseries_by_week = weeks
+        return weeks
 
     def save_as_json(self):
         # save all the data as one json file
@@ -390,11 +427,12 @@ class Profile(object):
             "top_videos": (self.top_videos),
             "video_duration_data": self.video_duration_data,
             "hashtags_data": self.hashtags_data,
-            "views_time_series": self.views_time_series,
-            "likes_time_series": self.likes_time_series,
-            "comments_time_series": self.comments_time_series,
-            "shares_time_series": self.shares_time_series,
-            "videos_time_series": self.videos_time_series
+            "views_timeseries": self.views_timeseries,
+            "likes_timeseries": self.likes_timeseries,
+            "comments_timeseries": self.comments_timeseries,
+            "shares_timeseries": self.shares_timeseries,
+            "videos_timeseries": self.videos_timeseries,
+            "videos_timeseries_by_week": self.videos_timeseries_by_week
         }
 
         self.data = data
