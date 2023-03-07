@@ -64,7 +64,7 @@ def serve(path):
 
 
 if __name__ == '__main__':
-    app.run(port=5555)
+    app.run(port=5555, host= '0.0.0.0')
 
 
 
